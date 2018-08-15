@@ -147,6 +147,94 @@ class Antminer:
 
 
 
+def setAsicConfig(ip, reboot = False,
+                  changePool = False,
+                  replaceWorker = False,
+                  changeWorker =  False,
+                  saveChange = False,
+                  testWorker = False,
+                  pools = ['eu.ss.btc.com:1800','eu.ss.btc.com:443','eu.ss.btc.com:25'],
+                  replaceWorkerTextOld = '',
+                  replaceWorkerTextNew = '',
+                  workerNew = '',
+                  testWorkerText = ''):
+
+
+    errorWorker = False
+    print('IP: '+ ip)
+    asik = Antminer(ip,'root','root')
+                        
+    if (not asik.isS9() and not asik.isD3()):
+        if (asik.getModel() != ''): print('{0} not supported!'.format(asik.getModel()))
+        return False
+
+    if (reboot):
+        asik.reboot();
+        return False
+
+    configs = asik.getConfig()
+
+    print('model = {0} \n'.format(asik.getModel()))
+
+    if (configs != None):
+        i = 1
+        for config in configs:
+            print('======================\nPool {0}:\n     URL: {1}\n     Worker: {2}\n     Password: {3}\n======================'.format( i,config.get('url'),config.get('worker'), config.get('password') ) )
+            if ( testWorker ):
+                worker = config.get('worker')
+                if ( worker.find(testWorkerText) == -1 ):
+                    errorWorker = True
+                    break
+
+                if ( changePool ) :
+                    config.update({'url' : pools[i-1]})
+
+                if ( replaceWorker ):
+                    worker = config.get('worker')
+                    worker = worker.replace(replaceWorkerTextOld,replaceWorkerTextNew)
+                    config.update({'worker' : worker})
+
+                if ( changeWorker ):
+                    worker = workerNew
+                    config.update({'worker' : worker})
+
+            i+=1
+            if i==4:
+                break
+
+        if (not errorWorker) :     
+            print('_ant_freq: {0}'.format(configs[3]))
+            if (asik.isS9()): print('_ant_voltage: {0}\n'.format(configs[4]))
+                        
+            if ( saveChange ):
+                print('Send POST Data: \n')
+
+                print('\
+                         _ant_pool1url={0}&\n \
+                        _ant_pool1user={1}&\n \
+                        _ant_pool1pw={2}&\n \
+                        _ant_pool2url={3}&\n \
+                        _ant_pool2user={4}&\n \
+                        _ant_pool2pw={5}&\n \
+                        _ant_pool3url={6}&\n \
+                        _ant_pool3user={7}&\n \
+                        _ant_pool3pw={8}&\n \
+                        _ant_nobeeper=false&\n \
+                        _ant_notempoverctrl=false&\n \
+                        _ant_fan_customize_switch=false&\n \
+                        _ant_fan_customize_value=&\n \
+                        _ant_freq={9}&'.format(configs[0].get('url'),configs[0].get('worker'),configs[0].get('password'),
+                                                             configs[1].get('url'),configs[1].get('worker'),configs[1].get('password'),
+                                                             configs[2].get('url'),configs[2].get('worker'),configs[2].get('password'),
+                                                             configs[3]))
+                if (asik.isS9()):
+                    print('\
+                         _ant_voltage={0}&\n'.format(configs[4]))
+
+                response = asik.sendConfig(configs)           
+                if (response): print('Get POST response: {0}\n'.format(response))                        
+        else:
+            print('Worker "{0}" != "{1}" does not match\n'.format(testWorkerText,configs[0].get('worker')))
 
 
 
@@ -155,7 +243,7 @@ class Antminer:
 ferma = '30'
 
 startIp1 = 1
-endIp1 = 45
+endIp1 = 1
 
 startIp2 = 8
 endIp2 = 8
@@ -184,84 +272,9 @@ try:
     for s in range(startIp2, endIp2+1):
         for j in range(startIp1, endIp1+1):
             ip = '10.{2}.{1}.{0}'.format(j,s,ferma)
-            errorWorker = False
-            print('IP: '+ ip)
-            asik = Antminer(ip,'root','root')
-                        
-            if (not asik.isS9() and not asik.isD3()):
-                if (asik.getModel() != ''): print('{0} not supported!'.format(asik.getModel()))
-                continue
-
-            if (reboot):
-                asik.reboot();
-                continue
-
-            
-            configs = asik.getConfig()
-
-            print('model = {0} \n'.format(asik.getModel()))
-
-            if (configs != None):
-                i = 1
-                for config in configs:
-                   print('======================\nPool {0}:\n     URL: {1}\n     Worker: {2}\n     Password: {3}\n======================'.format(i,config.get('url'),config.get('worker'), config.get('password')))
-                   if ( testWorker ):
-                       worker = config.get('worker')
-                       if ( worker.find(testWorkerText) == -1 ):
-                           errorWorker = True
-                           break
-
-                   if ( changePool ) :
-                       config.update({'url' : pools[i-1]})
-
-                   if ( replaceWorker ):
-                       worker = config.get('worker')
-                       worker = worker.replace(replaceWorkerTextOld,replaceWorkerTextNew)
-                       config.update({'worker' : worker})
-
-                   if ( changeWorker ):
-                       worker = workerNew
-                       config.update({'worker' : worker})
-
-                   
-
-                   i+=1
-                   if i==4:
-                       break
-
-                if (not errorWorker) :     
-                    print('_ant_freq: {0}'.format(configs[3]))
-                    if (asik.isS9()): print('_ant_voltage: {0}\n'.format(configs[4]))
-                        
-                    if ( saveChange ):
-                        print('Send POST Data: \n')
-
-                        print('\
-                                 _ant_pool1url={0}&\n \
-                                _ant_pool1user={1}&\n \
-                                _ant_pool1pw={2}&\n \
-                                _ant_pool2url={3}&\n \
-                                _ant_pool2user={4}&\n \
-                                _ant_pool2pw={5}&\n \
-                                _ant_pool3url={6}&\n \
-                                _ant_pool3user={7}&\n \
-                                _ant_pool3pw={8}&\n \
-                                _ant_nobeeper=false&\n \
-                                _ant_notempoverctrl=false&\n \
-                                _ant_fan_customize_switch=false&\n \
-                                _ant_fan_customize_value=&\n \
-                                _ant_freq={9}&'.format(configs[0].get('url'),configs[0].get('worker'),configs[0].get('password'),
-                                                             configs[1].get('url'),configs[1].get('worker'),configs[1].get('password'),
-                                                             configs[2].get('url'),configs[2].get('worker'),configs[2].get('password'),
-                                                             configs[3]))
-                        if (asik.isS9()):
-                            print('\
-                                 _ant_voltage={0}&\n'.format(configs[4]))
-
-                        response = asik.sendConfig(configs)           
-                        if (response): print('Get POST response: {0}\n'.format(response))                        
-                else:
-                    print('Worker "{0}" does not match\n'.format(testWorkerText))
-
+            setAsicConfig(ip, reboot, changePool, replaceWorker,
+                  changeWorker, saveChange, testWorker,
+                  pools, replaceWorkerTextOld, replaceWorkerTextNew, workerNew,
+                  testWorkerText)
 except KeyboardInterrupt:
     print('Exit!')
