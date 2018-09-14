@@ -240,13 +240,25 @@ def setAsicConfig(ip, reboot = False,
 
 
 #------------------------------Config--------------------------------------
-ferma = '30'
 
+# kazic
 startIp1 = 1
 endIp1 = 1
 
 startIp2 = 8
 endIp2 = 8
+
+# Container
+rack_start = 1
+rack_end = 9
+
+shelf_start = 1
+shelf_end = 6
+
+asik_on_rack_start = 1
+asik_on_rack_end = 4
+
+ferma = '30'
 
 pools = ['eu.ss.btc.com:1800','eu.ss.btc.com:443','eu.ss.btc.com:25']
 
@@ -267,14 +279,32 @@ testWorker = False
 
 
 
+
 #================================ MAIN ====================================
+
+#kazic
+# try:
+#     for s in range(startIp2, endIp2+1):
+#         for j in range(startIp1, endIp1+1):
+#             ip = '10.{2}.{1}.{0}'.format(j,s,ferma)
+#             setAsicConfig(ip, reboot, changePool, replaceWorker,
+#                   changeWorker, saveChange, testWorker,
+#                   pools, replaceWorkerTextOld, replaceWorkerTextNew, workerNew,
+#                   testWorkerText)
+# except KeyboardInterrupt:
+#     print('Exit!')
+
+
+# Container
 try:
-    for s in range(startIp2, endIp2+1):
-        for j in range(startIp1, endIp1+1):
-            ip = '10.{2}.{1}.{0}'.format(j,s,ferma)
-            setAsicConfig(ip, reboot, changePool, replaceWorker,
-                  changeWorker, saveChange, testWorker,
-                  pools, replaceWorkerTextOld, replaceWorkerTextNew, workerNew,
-                  testWorkerText)
+    for rack in range(rack_start, rack_end + 1):
+        for shelf in range(shelf_start, shelf_end + 1):
+            for asik in range(asik_on_rack_start, asik_on_rack_end + 1):
+
+                ip = '10.{0}.{1}.{2}{3}'.format(ferma,rack,shelf,asik)
+                setAsicConfig(ip, reboot, changePool, replaceWorker,
+                      changeWorker, saveChange, testWorker,
+                      pools, replaceWorkerTextOld, replaceWorkerTextNew, workerNew,
+                      testWorkerText)
 except KeyboardInterrupt:
     print('Exit!')
