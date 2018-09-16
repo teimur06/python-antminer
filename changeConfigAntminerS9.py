@@ -258,7 +258,7 @@ shelf_end = 6
 asik_on_rack_start = 1
 asik_on_rack_end = 4
 
-ferma = '30'
+ferma = '10'
 
 pools = ['eu.ss.btc.com:1800','eu.ss.btc.com:443','eu.ss.btc.com:25']
 
