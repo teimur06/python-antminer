@@ -186,17 +186,17 @@ def setAsicConfig(ip, reboot = False,
                     errorWorker = True
                     break
 
-                if ( changePool ) :
-                    config.update({'url' : pools[i-1]})
+            if changePool:
+                config.update({'url' : pools[i-1]})
 
-                if ( replaceWorker ):
-                    worker = config.get('worker')
-                    worker = worker.replace(replaceWorkerTextOld,replaceWorkerTextNew)
-                    config.update({'worker' : worker})
+            if replaceWorker :
+                worker = config.get('worker')
+                worker = worker.replace(replaceWorkerTextOld,replaceWorkerTextNew)
+                config.update({'worker' : worker})
 
-                if ( changeWorker ):
-                    worker = workerNew
-                    config.update({'worker' : worker})
+            if changeWorker:
+                worker = workerNew
+                config.update({'worker' : worker})
 
             i+=1
             if i==4:
@@ -237,13 +237,19 @@ def setAsicConfig(ip, reboot = False,
             print('Worker "{0}" != "{1}" does not match\n'.format(testWorkerText,configs[0].get('worker')))
 
 
-
+def workerIncrement(worker,i):
+    index = ''
+    if i < 10: index = '00{0}'.format(i)
+    if (i >= 10) and (i < 100): index = '0{0}'.format(i)
+    if (i >= 100) and (i < 1000): index = '{0}'.format(i)
+    i += 1
+    return worker + index
 
 #------------------------------Config--------------------------------------
 
 # kazic
 startIp1 = 1
-endIp1 = 1
+endIp1 = 5
 
 startIp2 = 8
 endIp2 = 8
@@ -265,14 +271,16 @@ pools = ['eu.ss.btc.com:1800','eu.ss.btc.com:443','eu.ss.btc.com:25']
 replaceWorkerTextOld = 'yersinmukay_'
 replaceWorkerTextNew = 'YersinMukay.0'
 
-workerNew = ''
+workerNew = 'workerNew.'
+startIncrementWorker = 1
 
 testWorkerText = 'yersinmukay_'
 
 reboot = False
 changePool = False
 replaceWorker = False
-changeWorker =  False
+changeWorker = False
+incrementWorker = False
 saveChange = False
 testWorker = False
 #--------------------------------------------------------------------------
@@ -283,14 +291,20 @@ testWorker = False
 #================================ MAIN ====================================
 
 #kazic
+
+
 # try:
 #     for s in range(startIp2, endIp2+1):
 #         for j in range(startIp1, endIp1+1):
 #             ip = '10.{2}.{1}.{0}'.format(j,s,ferma)
+#             workerNewTemp = workerNew
+#             if incrementWorker:
+#                 workerNewTemp = workerIncrement(workerNew,startIncrementWorker)
+#                 startIncrementWorker += 1
 #             setAsicConfig(ip, reboot, changePool, replaceWorker,
-#                   changeWorker, saveChange, testWorker,
-#                   pools, replaceWorkerTextOld, replaceWorkerTextNew, workerNew,
-#                   testWorkerText)
+#                           changeWorker, saveChange, testWorker,
+#                           pools, replaceWorkerTextOld, replaceWorkerTextNew, workerNewTemp,
+#                           testWorkerText)
 # except KeyboardInterrupt:
 #     print('Exit!')
 
@@ -300,11 +314,15 @@ try:
     for rack in range(rack_start, rack_end + 1):
         for shelf in range(shelf_start, shelf_end + 1):
             for asik in range(asik_on_rack_start, asik_on_rack_end + 1):
-
                 ip = '10.{0}.{1}.{2}{3}'.format(ferma,rack,shelf,asik)
+                workerNewTemp = workerNew
+                if incrementWorker:
+                    workerNewTemp = workerIncrement(workerNew, startIncrementWorker)
+                    startIncrementWorker += 1
+
                 setAsicConfig(ip, reboot, changePool, replaceWorker,
                       changeWorker, saveChange, testWorker,
-                      pools, replaceWorkerTextOld, replaceWorkerTextNew, workerNew,
+                      pools, replaceWorkerTextOld, replaceWorkerTextNew, workerNewTemp,
                       testWorkerText)
 except KeyboardInterrupt:
     print('Exit!')
