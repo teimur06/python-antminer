@@ -12,7 +12,7 @@ from lxml import html
 from antminer.base import BaseClient
 from pyjsparser import PyJsParser
 import socket
-import time
+
 
 class Antminer:
     def __init__(self,IP, user='', password=''):
@@ -21,10 +21,8 @@ class Antminer:
         self.postData = None
         self.URL = 'http://'+IP
         self.URLGET = 'http://'+IP+'/cgi-bin/minerConfiguration.cgi'
-        self.URLPOST = 'http://'+IP+'/cgi-bin/set_miner_conf.cgi'
-        self.URLREBOOT = 'http://'+IP+'/cgi-bin/reboot.cgi?_=1532348375087'
-        self.URLKILLBITMAIN = 'http://'+IP+'/cgi-bin/kill_bmminer.cgi?_=1542365058667'
-        self.URLSENDFILE = 'http://'+IP+'/cgi-bin/upgrade.cgi'
+        self.URLPOST = 'http://'+IP+'//cgi-bin/set_miner_conf.cgi'
+        self.URLREBOOT = 'http://'+IP+'//cgi-bin/reboot.cgi?_=1532348375087'
         self.user = user
         self.password = password
         self.model = ''
@@ -43,7 +41,7 @@ class Antminer:
             self.model = 'Antminer S9'
     
     def isS9(self):
-        return self.model == 'Antminer S9' or self.model == 'Antminer S9i' or self.model == 'Antminer T9'
+        return (self.model == 'Antminer S9' or self.model == 'Antminer S9i' or self.model == 'Antminer T9')
 
 
     def isD3(self):
@@ -74,17 +72,17 @@ class Antminer:
                 scriptToPython = p.parse(script[3].text)
                 listbody = scriptToPython.get('body')
                 self.config = [
-                        {'url':      listbody[0].get('expression').get('right').get('properties')[0].get('value').get('elements')[0].get('properties')[0].get('value').get('value'),
-                         'worker':   listbody[0].get('expression').get('right').get('properties')[0].get('value').get('elements')[0].get('properties')[1].get('value').get('value'),
-                         'password': listbody[0].get('expression').get('right').get('properties')[0].get('value').get('elements')[0].get('properties')[2].get('value').get('value')},
+                        {'url' :      listbody[0].get('expression').get('right').get('properties')[0].get('value').get('elements')[0].get('properties')[0].get('value').get('value'),
+                         'worker' :   listbody[0].get('expression').get('right').get('properties')[0].get('value').get('elements')[0].get('properties')[1].get('value').get('value'),
+                         'password' : listbody[0].get('expression').get('right').get('properties')[0].get('value').get('elements')[0].get('properties')[2].get('value').get('value') },
 
-                        {'url':      listbody[0].get('expression').get('right').get('properties')[0].get('value').get('elements')[1].get('properties')[0].get('value').get('value'),
-                         'worker':   listbody[0].get('expression').get('right').get('properties')[0].get('value').get('elements')[1].get('properties')[1].get('value').get('value'),
-                         'password': listbody[0].get('expression').get('right').get('properties')[0].get('value').get('elements')[1].get('properties')[2].get('value').get('value')},
+                        {'url' :      listbody[0].get('expression').get('right').get('properties')[0].get('value').get('elements')[1].get('properties')[0].get('value').get('value'),
+                         'worker' :   listbody[0].get('expression').get('right').get('properties')[0].get('value').get('elements')[1].get('properties')[1].get('value').get('value'),
+                         'password' : listbody[0].get('expression').get('right').get('properties')[0].get('value').get('elements')[1].get('properties')[2].get('value').get('value') },
 
-                        {'url':      listbody[0].get('expression').get('right').get('properties')[0].get('value').get('elements')[2].get('properties')[0].get('value').get('value'),
-                         'worker':   listbody[0].get('expression').get('right').get('properties')[0].get('value').get('elements')[2].get('properties')[1].get('value').get('value'),
-                         'password': listbody[0].get('expression').get('right').get('properties')[0].get('value').get('elements')[2].get('properties')[2].get('value').get('value')},
+                        {'url' :      listbody[0].get('expression').get('right').get('properties')[0].get('value').get('elements')[2].get('properties')[0].get('value').get('value'),
+                         'worker' :   listbody[0].get('expression').get('right').get('properties')[0].get('value').get('elements')[2].get('properties')[1].get('value').get('value'),
+                         'password' : listbody[0].get('expression').get('right').get('properties')[0].get('value').get('elements')[2].get('properties')[2].get('value').get('value') },
 
                         listbody[0].get('expression').get('right').get('properties')[6].get('value').get('value'),
                         
@@ -147,90 +145,56 @@ class Antminer:
             print('POST set_miner_conf.cgi Request error\n')
             return None
 
-    def sendFile(self,filename):
-            r = requests.get(self.URLKILLBITMAIN,  auth=HTTPDigestAuth(self.user, self.password))
-
-            files = {'file': open(filename, 'rb')}
-            r = requests.post(self.URLSENDFILE, auth=HTTPDigestAuth(self.user, self.password), files=files)
-            statuscode = r.status_code
-
-            r = requests.get(self.URLREBOOT, auth=HTTPDigestAuth(self.user, self.password))
-
-            return statuscode
 
 
+def setAsicConfig(ip, reboot = False,
+                  changePool = False,
+                  replaceWorker = False,
+                  changeWorker =  False,
+                  saveChange = False,
+                  testWorker = False,
+                  pools = ['eu.ss.btc.com:1800','eu.ss.btc.com:443','eu.ss.btc.com:25'],
+                  replaceWorkerTextOld = '',
+                  replaceWorkerTextNew = '',
+                  workerNew = '',
+                  testWorkerText = ''):
 
-def setAsicConfig(ip, sets):
-
-
-    def workerIncrement(worker, i):
-        index = ''
-        if i < 10: index = '00{0}'.format(i)
-        if (i >= 10) and (i < 100): index = '0{0}'.format(i)
-        if (i >= 100) and (i < 1000): index = '{0}'.format(i)
-        i += 1
-        return worker + index
 
     errorWorker = False
-    print('IP: ' + ip)
-    asik = Antminer(ip, 'root', 'root')
-
-    if not asik.isS9() and not asik.isD3():
-        if asik.getModel() != '': print('{0} not supported!'.format(asik.getModel()))
+    print('IP: '+ ip)
+    asik = Antminer(ip,'root','root')
+                        
+    if (not asik.isS9() and not asik.isD3()):
+        if (asik.getModel() != ''): print('{0} not supported!'.format(asik.getModel()))
         return False
 
-    if sets.get('reboot'):
-        asik.reboot()
+    if (reboot):
+        asik.reboot();
         return False
 
     configs = asik.getConfig()
 
     print('model = {0} \n'.format(asik.getModel()))
 
-    if sets.get('update'):
-        timeStart = time.time()
-        try:
-            print("Send file: {}\n".format(sets.get('filename')))
-            statuscode = asik.sendFile(sets.get('filename'))
-            print("Status send file: {}\n".format(statuscode))
-        except requests.exceptions.RequestException as e:
-            print("Exeption send File: {0}\n".format(e))
-
-        timeEnd = time.time()
-        timeSecond = timeEnd - timeStart;
-        timeMinute = timeSecond / 60
-        print("Time run {0:.0f} second\n".format(timeSecond))
-        print("Time run {0:.0f} minute\n".format(timeMinute))
-
-        return False
-
-    workerNew = sets.get('workerNew')
-    if sets.get('incrementWorker'):
-        startIncrementWorker = sets.get('startIncrementWorker')
-        workerNew = workerIncrement(workerNew, startIncrementWorker)
-        startIncrementWorker += 1
-        sets.update({'startIncrementWorker': startIncrementWorker})
-
-
-    if configs != None:
+    if (configs != None):
         i = 1
         for config in configs:
             print('======================\nPool {0}:\n     URL: {1}\n     Worker: {2}\n     Password: {3}\n======================'.format( i,config.get('url'),config.get('worker'), config.get('password') ) )
-            if sets.get('testWorker'):
+            if ( testWorker ):
                 worker = config.get('worker')
-                if worker.find(sets.get('testWorkerText')) == -1:
+                if ( worker.find(testWorkerText) == -1 ):
                     errorWorker = True
                     break
 
-            if sets.get('changePool'):
+            if changePool:
                 config.update({'url' : pools[i-1]})
 
-            if sets.get('replaceWorker') :
+            if replaceWorker :
                 worker = config.get('worker')
-                worker = worker.replace(sets.get('replaceWorkerTextOld'),sets.get('replaceWorkerTextNew'))
+                worker = worker.replace(replaceWorkerTextOld,replaceWorkerTextNew)
                 config.update({'worker' : worker})
 
-            if sets.get('changeWorker'):
+            if changeWorker:
                 worker = workerNew
                 config.update({'worker' : worker})
 
@@ -242,7 +206,7 @@ def setAsicConfig(ip, sets):
             print('_ant_freq: {0}'.format(configs[3]))
             if (asik.isS9()): print('_ant_voltage: {0}\n'.format(configs[4]))
                         
-            if ( sets.get('saveChange') ):
+            if ( saveChange ):
                 print('Send POST Data: \n')
 
                 print('\
@@ -268,12 +232,18 @@ def setAsicConfig(ip, sets):
                          _ant_voltage={0}&\n'.format(configs[4]))
 
                 response = asik.sendConfig(configs)           
-                if response: print('Get POST response: {0}\n'.format(response))
+                if (response): print('Get POST response: {0}\n'.format(response))                        
         else:
-            print('Worker "{0}" != "{1}" does not match\n'.format(sets.get('testWorkerText'),configs[0].get('worker')))
+            print('Worker "{0}" != "{1}" does not match\n'.format(testWorkerText,configs[0].get('worker')))
 
 
-
+def workerIncrement(worker,i):
+    index = ''
+    if i < 10: index = '00{0}'.format(i)
+    if (i >= 10) and (i < 100): index = '0{0}'.format(i)
+    if (i >= 100) and (i < 1000): index = '{0}'.format(i)
+    i += 1
+    return worker + index
 
 #------------------------------Config--------------------------------------
 
@@ -284,41 +254,35 @@ endIp1 = 5
 startIp2 = 8
 endIp2 = 8
 
+# Container
+rack_start = 1
+rack_end = 9
 
-sets = {
+shelf_start = 1
+shelf_end = 6
 
-    'rack_start': 8,
-    'rack_end': 8,
+asik_on_rack_start = 1
+asik_on_rack_end = 4
 
-    'shelf_start': 9,
-    'shelf_end': 9,
+ferma = '10'
 
-    'asik_on_rack_start': 4,
-    'asik_on_rack_end': 5,
+pools = ['eu.ss.btc.com:1800','eu.ss.btc.com:443','eu.ss.btc.com:25']
 
-    'ferma': '40',
-    'pools': ['eu.ss.btc.com:1800','eu.ss.btc.com:443','eu.ss.btc.com:25'],
+replaceWorkerTextOld = 'yersinmukay_'
+replaceWorkerTextNew = 'YersinMukay.0'
 
-    'replaceWorkerTextOld': 'yersinmukay_',
-    'replaceWorkerTextNew': 'YersinMukay.0',
+workerNew = 'workerNew.'
+startIncrementWorker = 1
 
-    'workerNew': 'gigalinx.',
-    'startIncrementWorker': 992,
+testWorkerText = 'yersinmukay_'
 
-    'testWorkerText': 'yersinmukay_',
-
-    'filename': 'D:\\update.tar.gz',
-
-    'update': False,
-    'reboot': False,
-    'changePool': False,
-    'replaceWorker': False,
-    'changeWorker': False,
-    'incrementWorker': True,
-    'saveChange': False,
-    'testWorker': False,
-
-}
+reboot = False
+changePool = False
+replaceWorker = False
+changeWorker = False
+incrementWorker = False
+saveChange = False
+testWorker = False
 #--------------------------------------------------------------------------
 
 
@@ -347,10 +311,18 @@ sets = {
 
 # Container
 try:
-    for rack in range(sets.get('rack_start'), sets.get('rack_end') + 1):
-        for shelf in range(sets.get('shelf_start'), sets.get('shelf_end') + 1):
-            for asik in range(sets.get('asik_on_rack_start'), sets.get('asik_on_rack_end') + 1):
-                ip = '10.{0}.{1}.{2}{3}'.format(sets.get('ferma'),rack,shelf,asik)
-                setAsicConfig(ip, sets)
+    for rack in range(rack_start, rack_end + 1):
+        for shelf in range(shelf_start, shelf_end + 1):
+            for asik in range(asik_on_rack_start, asik_on_rack_end + 1):
+                ip = '10.{0}.{1}.{2}{3}'.format(ferma,rack,shelf,asik)
+                workerNewTemp = workerNew
+                if incrementWorker:
+                    workerNewTemp = workerIncrement(workerNew, startIncrementWorker)
+                    startIncrementWorker += 1
+
+                setAsicConfig(ip, reboot, changePool, replaceWorker,
+                      changeWorker, saveChange, testWorker,
+                      pools, replaceWorkerTextOld, replaceWorkerTextNew, workerNewTemp,
+                      testWorkerText)
 except KeyboardInterrupt:
     print('Exit!')
