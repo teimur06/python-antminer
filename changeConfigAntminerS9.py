@@ -13,6 +13,8 @@ from antminer.base import BaseClient
 from pyjsparser import PyJsParser
 import socket
 import time
+import json
+import os
 
 class Antminer:
     def __init__(self,IP, user='', password=''):
@@ -147,21 +149,18 @@ class Antminer:
             print('POST set_miner_conf.cgi Request error\n')
             return None
 
-    def sendFile(self,filename):
+    def sendUpdateFile(self,filename):
             r = requests.get(self.URLKILLBITMAIN,  auth=HTTPDigestAuth(self.user, self.password))
-
+            time.sleep(4)
             files = {'file': open(filename, 'rb')}
             r = requests.post(self.URLSENDFILE, auth=HTTPDigestAuth(self.user, self.password), files=files)
             statuscode = r.status_code
-
             r = requests.get(self.URLREBOOT, auth=HTTPDigestAuth(self.user, self.password))
-
             return statuscode
 
 
 
-def setAsicConfig(ip, sets):
-
+def setAsicConfig(ip, config_user):
 
     def workerIncrement(worker, i):
         index = ''
@@ -179,58 +178,41 @@ def setAsicConfig(ip, sets):
         if asik.getModel() != '': print('{0} not supported!'.format(asik.getModel()))
         return False
 
-    if sets.get('reboot'):
+    if config_user.get('reboot'):
         asik.reboot()
-        return False
+        return True
 
     configs = asik.getConfig()
 
     print('model = {0} \n'.format(asik.getModel()))
 
-    if sets.get('update'):
-        timeStart = time.time()
-        try:
-            print("Send file: {}\n".format(sets.get('filename')))
-            statuscode = asik.sendFile(sets.get('filename'))
-            print("Status send file: {}\n".format(statuscode))
-        except requests.exceptions.RequestException as e:
-            print("Exeption send File: {0}\n".format(e))
-
-        timeEnd = time.time()
-        timeSecond = timeEnd - timeStart;
-        timeMinute = timeSecond / 60
-        print("Time run {0:.0f} second\n".format(timeSecond))
-        print("Time run {0:.0f} minute\n".format(timeMinute))
-
-        return False
-
-    workerNew = sets.get('workerNew')
-    if sets.get('incrementWorker'):
-        startIncrementWorker = sets.get('startIncrementWorker')
+    workerNew = config_user.get('workerNew')
+    if config_user.get('incrementWorker'):
+        startIncrementWorker = config_user.get('startIncrementWorker')
         workerNew = workerIncrement(workerNew, startIncrementWorker)
         startIncrementWorker += 1
-        sets.update({'startIncrementWorker': startIncrementWorker})
+        config_user.update({'startIncrementWorker': startIncrementWorker})
 
 
     if configs != None:
         i = 1
         for config in configs:
             print('======================\nPool {0}:\n     URL: {1}\n     Worker: {2}\n     Password: {3}\n======================'.format( i,config.get('url'),config.get('worker'), config.get('password') ) )
-            if sets.get('testWorker'):
+            if config_user.get('testWorker'):
                 worker = config.get('worker')
-                if worker.find(sets.get('testWorkerText')) == -1:
+                if worker.find(config_user.get('testWorkerText')) == -1:
                     errorWorker = True
                     break
 
-            if sets.get('changePool'):
-                config.update({'url' : pools[i-1]})
+            if config_user.get('changePool'):
+                config.update({'url' : config_user.get('pools')[i-1]})
 
-            if sets.get('replaceWorker') :
+            if config_user.get('replaceWorker') :
                 worker = config.get('worker')
-                worker = worker.replace(sets.get('replaceWorkerTextOld'),sets.get('replaceWorkerTextNew'))
+                worker = worker.replace(config_user.get('replaceWorkerTextOld'),config_user.get('replaceWorkerTextNew'))
                 config.update({'worker' : worker})
 
-            if sets.get('changeWorker'):
+            if config_user.get('changeWorker'):
                 worker = workerNew
                 config.update({'worker' : worker})
 
@@ -242,7 +224,7 @@ def setAsicConfig(ip, sets):
             print('_ant_freq: {0}'.format(configs[3]))
             if (asik.isS9()): print('_ant_voltage: {0}\n'.format(configs[4]))
                         
-            if ( sets.get('saveChange') ):
+            if ( config_user.get('saveChange') ):
                 print('Send POST Data: \n')
 
                 print('\
@@ -270,11 +252,27 @@ def setAsicConfig(ip, sets):
                 response = asik.sendConfig(configs)           
                 if response: print('Get POST response: {0}\n'.format(response))
         else:
-            print('Worker "{0}" != "{1}" does not match\n'.format(sets.get('testWorkerText'),configs[0].get('worker')))
+            print('Worker "{0}" != "{1}" does not match\n'.format(config_user.get('testWorkerText'),configs[0].get('worker')))
+            return False
 
 
+    if config_user.get('update'):
+        timeStart = time.time()
+        try:
+            print("Send file: {}\n".format(config_user.get('filename')))
+            statuscode = asik.sendUpdateFile(config_user.get('filename'))
+            print("Status send file: {}\n".format(statuscode))
+        except requests.exceptions.RequestException as e:
+            print("Exeption send File: {0}\n".format(e))
+            return False
+        finally:
+            timeEnd = time.time()
+            timeSecond = timeEnd - timeStart;
+            timeMinute = timeSecond / 60
+            print("Time run {0:.0f} second\n".format(timeSecond))
+            print("Time run {0:.0f} minute\n".format(timeMinute))
 
-
+        return True
 #------------------------------Config--------------------------------------
 
 # kazic
@@ -283,46 +281,6 @@ endIp1 = 5
 
 startIp2 = 8
 endIp2 = 8
-
-
-sets = {
-
-    'rack_start': 8,
-    'rack_end': 8,
-
-    'shelf_start': 9,
-    'shelf_end': 9,
-
-    'asik_on_rack_start': 4,
-    'asik_on_rack_end': 5,
-
-    'ferma': '40',
-    'pools': ['eu.ss.btc.com:1800','eu.ss.btc.com:443','eu.ss.btc.com:25'],
-
-    'replaceWorkerTextOld': 'yersinmukay_',
-    'replaceWorkerTextNew': 'YersinMukay.0',
-
-    'workerNew': 'gigalinx.',
-    'startIncrementWorker': 992,
-
-    'testWorkerText': 'yersinmukay_',
-
-    'filename': 'D:\\update.tar.gz',
-
-    'update': False,
-    'reboot': False,
-    'changePool': False,
-    'replaceWorker': False,
-    'changeWorker': False,
-    'incrementWorker': True,
-    'saveChange': False,
-    'testWorker': False,
-
-}
-#--------------------------------------------------------------------------
-
-
-
 
 #================================ MAIN ====================================
 
@@ -333,24 +291,32 @@ sets = {
 #     for s in range(startIp2, endIp2+1):
 #         for j in range(startIp1, endIp1+1):
 #             ip = '10.{2}.{1}.{0}'.format(j,s,ferma)
-#             workerNewTemp = workerNew
-#             if incrementWorker:
-#                 workerNewTemp = workerIncrement(workerNew,startIncrementWorker)
-#                 startIncrementWorker += 1
-#             setAsicConfig(ip, reboot, changePool, replaceWorker,
-#                           changeWorker, saveChange, testWorker,
-#                           pools, replaceWorkerTextOld, replaceWorkerTextNew, workerNewTemp,
-#                           testWorkerText)
+#             setAsicConfig(ip,config_json)
 # except KeyboardInterrupt:
 #     print('Exit!')
 
 
-# Container
+config_json = None
+
 try:
-    for rack in range(sets.get('rack_start'), sets.get('rack_end') + 1):
-        for shelf in range(sets.get('shelf_start'), sets.get('shelf_end') + 1):
-            for asik in range(sets.get('asik_on_rack_start'), sets.get('asik_on_rack_end') + 1):
-                ip = '10.{0}.{1}.{2}{3}'.format(sets.get('ferma'),rack,shelf,asik)
-                setAsicConfig(ip, sets)
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    config = open(current_dir+'/config.json')
+    config_json = json.load(config)
+    config.close()
+except FileNotFoundError as e:
+    print("Error file: {} \"{}\"\n".format(e.strerror, e.filename))
+    exit(1)
+except json.decoder.JSONDecodeError as e:
+    print("Error JSON: {} \n".format(e.args))
+    exit(1)
+
+
+#Container
+try:
+    for rack in range(config_json.get('rack_start'), config_json.get('rack_end') + 1):
+        for shelf in range(config_json.get('shelf_start'), config_json.get('shelf_end') + 1):
+            for asik in range(config_json.get('asik_on_rack_start'), config_json.get('asik_on_rack_end') + 1):
+                ip = '10.{0}.{1}.{2}{3}'.format(config_json.get('ferma'),rack,shelf,asik)
+                setAsicConfig(ip, config_json)
 except KeyboardInterrupt:
     print('Exit!')
