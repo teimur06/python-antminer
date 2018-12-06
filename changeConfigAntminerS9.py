@@ -45,11 +45,14 @@ class Antminer:
             self.model = 'Antminer S9'
     
     def isS9(self):
-        return self.model == 'Antminer S9' or self.model == 'Antminer S9i' or self.model == 'Antminer T9'
+        return self.model == 'Antminer S9' or self.model == 'Antminer S9i'
 
 
     def isD3(self):
         return (self.model == 'Antminer D3')
+
+    def isT9(self):
+        return (self.model == 'Antminer T9')
 
 
     def getModel(self):
@@ -93,7 +96,7 @@ class Antminer:
                         
                         ]
                 
-                if (self.isS9()):
+                if self.isS9() or self.isT9():
                     self.config.append(listbody[0].get('expression').get('right').get('properties')[7].get('value').get('value'))
 
                 return self.config
@@ -138,7 +141,7 @@ class Antminer:
                     '_ant_freq' : config[3],
                     
                     }
-        if (self.isS9()):
+        if self.isS9() or self.isT9():
             postData.update({'_ant_voltage' : config[4]})
             
         try:
@@ -174,7 +177,7 @@ def setAsicConfig(ip, config_user):
     print('IP: ' + ip)
     asik = Antminer(ip, 'root', 'root')
 
-    if not asik.isS9() and not asik.isD3():
+    if not asik.isS9() and not asik.isD3() and not asik.isT9():
         if asik.getModel() != '': print('{0} not supported!'.format(asik.getModel()))
         return False
 
@@ -222,7 +225,7 @@ def setAsicConfig(ip, config_user):
 
         if (not errorWorker) :     
             print('_ant_freq: {0}'.format(configs[3]))
-            if (asik.isS9()): print('_ant_voltage: {0}\n'.format(configs[4]))
+            if (asik.isS9() or asik.isT9()): print('_ant_voltage: {0}\n'.format(configs[4]))
                         
             if ( config_user.get('saveChange') ):
                 print('Send POST Data: \n')
@@ -245,7 +248,7 @@ def setAsicConfig(ip, config_user):
                                                              configs[1].get('url'),configs[1].get('worker'),configs[1].get('password'),
                                                              configs[2].get('url'),configs[2].get('worker'),configs[2].get('password'),
                                                              configs[3]))
-                if (asik.isS9()):
+                if asik.isS9() or asik.isT9():
                     print('\
                          _ant_voltage={0}&\n'.format(configs[4]))
 
@@ -257,6 +260,7 @@ def setAsicConfig(ip, config_user):
 
 
     if config_user.get('update'):
+        if not asik.isS9(): return False
         timeStart = time.time()
         try:
             print("Send file: {}\n".format(config_user.get('filename')))
