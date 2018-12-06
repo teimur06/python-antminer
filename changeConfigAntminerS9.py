@@ -152,7 +152,7 @@ class Antminer:
             print('POST set_miner_conf.cgi Request error\n')
             return None
 
-    def sendUpdateFile(self,filename):
+    def sendUpdateFileAntminerS9(self,filename):
             r = requests.get(self.URLKILLBITMAIN,  auth=HTTPDigestAuth(self.user, self.password))
             time.sleep(4)
             files = {'file': open(filename, 'rb')}
@@ -259,12 +259,13 @@ def setAsicConfig(ip, config_user):
             return False
 
 
-    if config_user.get('update'):
+    if config_user.get('updateAntminerS9'):
         if not asik.isS9(): return False
         timeStart = time.time()
         try:
-            print("Send file: {}\n".format(config_user.get('filename')))
-            statuscode = asik.sendUpdateFile(config_user.get('filename'))
+            filename = config_user.get('updateFileNameAntminerS9')
+            print("Send file: {}\n".format(filename))
+            statuscode = asik.sendUpdateFileAntminerS9(filename)
             print("Status send file: {}\n".format(statuscode))
         except requests.exceptions.RequestException as e:
             print("Exeption send File: {0}\n".format(e))
